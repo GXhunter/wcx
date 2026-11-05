@@ -3,6 +3,8 @@ package com.Johnny.wcx.ui.utils
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Resources
+import android.view.ContextThemeWrapper
+import com.Johnny.wcx.constants.PackageNames
 import com.Johnny.wcx.utils.reflection.ClassLoaders
 
 /**
@@ -18,11 +20,20 @@ import com.Johnny.wcx.utils.reflection.ClassLoaders
  * 因此这里改为**完全不碰 Resources**：getResources() 直接返回宿主原 Resources，
  * 保证微信所有 drawable / color / dimen 的查找行为与未注入时完全一致。
  *
- * 说明：`Context.getString` / `getText` / `getDrawable` 在 framework 中均为 final，
- * 无法在这一层做「缺串降级」，因此不再尝试覆盖；模块内 Compose 文案均为中文字面量，
- * 不依赖模块 R.string，实际不受影响。
+ * Compose 的无障碍描述仍依赖模块字符串，必须使用 [composeContext] 创建 ComposeView，
+ * 并将其 Resources 提供给 LocalResources；宿主 View 和业务操作继续使用当前 Context。
  */
 class CommonContextWrapper(val base: Context) : ContextWrapper(base) {
+
+    val composeContext: Context by lazy {
+        val moduleContext = base.createPackageContext(PackageNames.MODULE, 0)
+            .createConfigurationContext(base.resources.configuration)
+        // 无障碍委托直接读取 View.resources，仅替换 LocalResources 无法修复百分比文案崩溃。
+        object : ContextThemeWrapper(this, moduleContext.theme) {
+            override fun getResources(): Resources = moduleContext.resources
+            override fun getAssets() = moduleContext.assets
+        }
+    }
 
     override fun getClassLoader(): ClassLoader {
         return ClassLoaders.MODULE

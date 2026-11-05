@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.core.graphics.drawable.toDrawable
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
@@ -30,6 +31,7 @@ fun showComposeDialog(
     content: @Composable ShowComposeDialogScope.() -> Unit
 ) {
     val context = CommonContextWrapper(context)
+    val composeContext = context.composeContext
 
     val dialog = Dialog(
         context,
@@ -48,7 +50,7 @@ fun showComposeDialog(
         val scope = ShowComposeDialogScope(context, this, window!!, ::dismiss)
 
         setContentView(
-            ComposeView(context).apply {
+            ComposeView(composeContext).apply {
                 setLifecycleOwner(lifecycleOwner)
 
                 // Disable view state saving to prevent NotSerializableException.
@@ -59,7 +61,10 @@ fun showComposeDialog(
                 isSaveEnabled = false
 
                 setContent {
-                    CompositionLocalProvider(LocalContext provides context) {
+                    CompositionLocalProvider(
+                        LocalContext provides context,
+                        LocalResources provides composeContext.resources,
+                    ) {
                         ModuleTheme {
                             Box(
                                 modifier = Modifier.wrapContentSize(),

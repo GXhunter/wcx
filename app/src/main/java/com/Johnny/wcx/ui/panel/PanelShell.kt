@@ -86,6 +86,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -145,6 +146,7 @@ fun showPanelDialog(
     content: @Composable PanelDialogScope.() -> Unit,
 ) {
     val wrapped = CommonContextWrapper(context)
+    val composeContext = wrapped.composeContext
     // ComponentDialog supplies both back-dispatcher owners required by the current
     // activity-compose BackHandler implementation. A plain Dialog has neither owner
     // in an injected WeChat window and crashes as soon as BackHandler enters composition.
@@ -181,9 +183,12 @@ fun showPanelDialog(
     }
     dialog.setCancelable(true)
     dialog.setContentView(
-        ComposeView(wrapped).apply {
+        ComposeView(composeContext).apply {
             setContent {
-                CompositionLocalProvider(LocalContext provides wrapped) {
+                CompositionLocalProvider(
+                    LocalContext provides wrapped,
+                    LocalResources provides composeContext.resources,
+                ) {
                     InjectedUiTheme {
                         Box(
                             modifier = Modifier
